@@ -17,6 +17,7 @@ from rest_framework.decorators import api_view
 from .notification_service import NotificationService
 from django.contrib.auth.hashers import check_password
 import pdb
+import threading
 
 from rest_framework.permissions import IsAuthenticated
 
@@ -319,7 +320,7 @@ class MeasurementDetailView(generics.RetrieveAPIView):
             return Response({"error": "Measurements not found for this user"}, status=status.HTTP_404_NOT_FOUND)
 
 
-class SendEmailView(generics.GenericAPIView):
+class SendEmailView2(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = UserProfileSerializer
 
@@ -339,6 +340,46 @@ class SendEmailView(generics.GenericAPIView):
             return Response({"error": "User with the provided username does not exist."}, )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def send_email_background(email, subject, message):
+    """
+    Runs outside the request lifecycle.
+    Any failure here will NOT affect the HTTP response.
+    """
+    try:
+        NotificationService.send_email_notification(
+            email=email,
+            subject=subject,
+            message=message,
+        )
+    except Exception as e:
+        # Optional: log this instead of print
+        print("Email sending failed:", e)
+
+
+class SendEmailView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserProfileSerializer
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get("username")
+        subject = request.data.get("subject")
+        message = request.data.get("message")
+
+        user_profile = get_object_or_404(UserProfile, username=username)
+
+        # 🔥 Run email sending in background
+        threading.Thread(
+            target=send_email_background,
+            args=(user_profile.email, subject, message),
+            daemon=True,  # Ensures it won't block shutdown
+        ).start()
+
+        # ✅ Immediate response → no timeout ever
+        return Response(
+            {"success": "Email queued successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminDashboardView(APIView):
