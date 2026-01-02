@@ -3,6 +3,29 @@ from django.core.mail import send_mail
 from twilio.rest import Client
 from django.conf import settings
 from .models import NotificationLog
+import os
+from django.conf import settings
+
+
+# class NotificationService:
+
+#     @staticmethod
+#     def send_email_notification(to_email, subject, message):
+#         try:
+#             send_mail(
+#                 subject,
+#                 message,
+#                 settings.DEFAULT_FROM_EMAIL,
+#                 [to_email],
+#                 fail_silently=False,
+#                 html_message=message,  # Use this parameter for HTML content
+#             )
+#             # NotificationService.log_notification(order, 'email', to_email, message, 'Success')
+#             return True
+#         except Exception as e:
+#             print(f"Error sending email: {e}")
+#             # NotificationService.log_notification(order, 'email', to_email, message, f'Failed: {str(e)}')
+#             return False
 
 
 class NotificationService:
@@ -11,19 +34,17 @@ class NotificationService:
     def send_email_notification(to_email, subject, message):
         try:
             send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [to_email],
+                subject=subject,
+                message="",  # Plain-text fallback
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                html_message=message,  # HTML body
                 fail_silently=False,
-                html_message=message,  # Use this parameter for HTML content
             )
-            #NotificationService.log_notification(order, 'email', to_email, message, 'Success')
             return True
         except Exception as e:
-            print(f"Error sending email: {e}")
-            #NotificationService.log_notification(order, 'email', to_email, message, f'Failed: {str(e)}')
-            return False
+            print("❌ Emailx sending failed:", e)
+            return FalseFalse
 
     @staticmethod
     def send_sms_notification(to_phone, message):
