@@ -348,9 +348,9 @@ def send_email_background(email, subject, message):
     """
     try:
         NotificationService.send_email_notification(
-            email=email,
-            subject=subject,
-            message=message,
+            user_profile.email,
+            subject,
+            message,
         )
     except Exception as e:
         # Optional: log this instead of print
